@@ -295,3 +295,25 @@ button.full{width:100%;justify-content:center;border-radius:18px;margin-top:12px
     border-radius:26px;
   }
 }
+
+
+/* v1.1 distance + directions fix */
+.control-card{
+  grid-template-columns:1fr 1fr 1fr;
+}
+.route-note{
+  margin:12px 0;
+  border:1px solid rgba(251,191,36,.28);
+  background:rgba(251,191,36,.10);
+  color:#fed7aa;
+  border-radius:18px;
+  padding:11px 12px;
+  line-height:1.4;
+  font-size:13px;
+  font-weight:760;
+}
+@media(max-width:620px){
+  .control-card{
+    grid-template-columns:1fr;
+  }
+}
