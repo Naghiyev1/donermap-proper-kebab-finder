@@ -47,3 +47,15 @@ Upload these files to your repo root:
 - manifest.json
 - service-worker.js
 - README.md
+
+
+## v1.1 — Distance + Directions Fix
+
+Fixes:
+- Distance label now says whether it is from you or from the search point
+- Distance clearly marked as straight-line estimate
+- If GPS is available, distances are calculated from your actual location
+- Directions explicitly start from Current Location
+- Added Apple Maps / Google Maps selector
+- Added route note in place drawer
+- Cache bumped to v1.1
