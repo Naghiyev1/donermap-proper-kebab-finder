@@ -1,0 +1,16 @@
+{
+  "name": "DonerMap \u2014 Proper Kebab Finder",
+  "short_name": "DonerMap",
+  "description": "Find nearby kebab places, walk there, and keep your own meat-quality notes.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#25140f",
+  "theme_color": "#25140f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
