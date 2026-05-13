@@ -1,5 +1,5 @@
 
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 
 const STORAGE = {
   notes: "donermap_notes_v1",
@@ -16,7 +16,8 @@ const state = {
   loading: false,
   radius: 1800,
   queryCenter: null,
-  filter: "all"
+  filter: "all",
+  directionApp: "auto"
 };
 
 const $ = s => document.querySelector(s);
@@ -44,7 +45,7 @@ function renderShell(){
           <div class="logo">🥙</div>
           <div>
             <strong>DonerMap</strong>
-            <span>Find kebab. Judge meat yourself. Remember the good ones. · v${APP_VERSION}</span>
+            <span>Find kebab. Judge meat yourself. Walk there properly. · v${APP_VERSION}</span>
           </div>
         </header>
 
@@ -76,11 +77,19 @@ function renderShell(){
               <option value="avoid">Avoid list</option>
             </select>
           </label>
+          <label>
+            <span>Directions app</span>
+            <select id="directionInput">
+              <option value="auto" selected>Auto</option>
+              <option value="apple">Apple Maps</option>
+              <option value="google">Google Maps</option>
+            </select>
+          </label>
         </section>
 
         <section class="truth-card">
           <strong>Reality check</strong>
-          <p>No map database reliably knows whether the meat is proper stacked döner or pressed/minced cone. This app finds candidates. Your notes make it accurate.</p>
+          <p>Distances in the list are straight-line estimates. The walking route in Apple or Google Maps can be longer because of roads, crossings, hills, private blocks or where your GPS actually starts.</p>
         </section>
 
         <section id="results" class="results">
@@ -194,6 +203,9 @@ async function searchNearby(lat, lon){
 
 function normalizePlaces(elements, lat, lon){
   const seen = new Set();
+  const origin = state.userLocation || { lat, lon };
+  const distanceFrom = state.userLocation ? "you" : "search point";
+
   return elements.map(el => {
     const pLat = el.lat ?? el.center?.lat;
     const pLon = el.lon ?? el.center?.lon;
@@ -210,7 +222,9 @@ function normalizePlaces(elements, lat, lon){
       opening: tags.opening_hours || "",
       phone: tags.phone || tags["contact:phone"] || "",
       website: tags.website || tags["contact:website"] || "",
-      distance: distanceMeters(lat, lon, Number(pLat), Number(pLon)),
+      distance: distanceMeters(origin.lat, origin.lon, Number(pLat), Number(pLon)),
+      distanceFrom,
+      searchDistance: distanceMeters(lat, lon, Number(pLat), Number(pLon)),
       tags
     };
     const key = `${p.name}-${round(p.lat,5)}-${round(p.lon,5)}`;
@@ -219,6 +233,7 @@ function normalizePlaces(elements, lat, lon){
     return p;
   }).filter(Boolean);
 }
+
 
 function distanceMeters(lat1, lon1, lat2, lon2){
   const R = 6371000;
@@ -281,7 +296,7 @@ function placeCard(p){
     <div class="place-top">
       <div>
         <h3>${esc(p.name)}</h3>
-        <p>${esc(p.cuisine)} · ${distanceLabel(p.distance)}</p>
+        <p>${esc(p.cuisine)} · ${distanceLabel(p.distance)} ${esc(distanceSuffix(p))}</p>
       </div>
       <span class="fav">${saved ? "★" : ""}</span>
     </div>
@@ -297,6 +312,10 @@ function placeCard(p){
 
 function distanceLabel(m){
   return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(1)} km`;
+}
+
+function distanceSuffix(p){
+  return p.distanceFrom === "you" ? "from you · straight-line" : "from search point · straight-line";
 }
 
 function verdictLabel(v){
@@ -355,7 +374,7 @@ function renderDrawer(p){
       <div>
         <div class="eyebrow">Kebab candidate</div>
         <h2>${esc(p.name)}</h2>
-        <p>${esc(p.cuisine)} · ${distanceLabel(p.distance)}</p>
+        <p>${esc(p.cuisine)} · ${distanceLabel(p.distance)} ${esc(distanceSuffix(p))}</p>
       </div>
       <button class="close" data-action="closeDrawer">×</button>
     </div>
@@ -363,6 +382,9 @@ function renderDrawer(p){
     <div class="drawer-actions">
       <button class="primary" data-action="directions" data-key="${esc(key)}">Walk there</button>
       <button data-action="toggleFav" data-key="${esc(key)}">${saved ? "Saved ★" : "Save"}</button>
+    </div>
+    <div class="route-note">
+      List distance is straight-line ${esc(distanceSuffix(p))}. Your maps app shows the real walking route.
     </div>
 
     <label class="field">
@@ -411,11 +433,20 @@ function noteTag(id, label, n){
 function openDirections(key){
   const p = placeByKey(key);
   if(!p) return;
+
+  const mode = state.directionApp || "auto";
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const apple = `http://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=w`;
-  const google = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=walking`;
-  window.open(isIOS ? apple : google, "_blank");
+
+  const dest = `${p.lat},${p.lon}`;
+  const apple = `https://maps.apple.com/?saddr=Current%20Location&daddr=${encodeURIComponent(dest)}&dirflg=w`;
+  const google = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${encodeURIComponent(dest)}&travelmode=walking`;
+
+  if(mode === "apple") window.open(apple, "_blank");
+  else if(mode === "google") window.open(google, "_blank");
+  else window.open(isIOS ? apple : google, "_blank");
 }
+
+
 
 function toggleFav(key){
   const s = favs();
@@ -475,6 +506,9 @@ function handleChange(e){
     state.filter = e.target.value;
     renderResults();
     addMarkers();
+  }
+  if(e.target.id === "directionInput"){
+    state.directionApp = e.target.value;
   }
 }
 
